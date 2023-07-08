@@ -5,24 +5,32 @@
 # License: BSD 3-Clause Clear License (see LICENSE for details)
 
 """
-This module provides several functions to work with JSON-like objects.
+This module provides several functions to work with nested collections of data.
+One example of nested collections are JSON-like objects.
 
-It provides functions to manipulate the values of a JSON-like object using a path-like notation.
+It provides functions to manipulate the values of nested collection using a path-like notation.
 A path is a sequence of keys and indices that can be used to access a value.
 
-It also provides functions to convert a nested JSON-like object into a flatten CSV-like object and vice versa.
+>>> obj = {"a": [{"b": 1}, {"b": 2}], "c": [{"d": 10}, {"d": 20}]}
+>>> get(obj, ("c", 0, "d"))
+10
+>>> set(obj, ("c", 0, "d"), 100)
+{'a': [{'b': 1}, {'b': 2}], 'c': [{'d': 100}, {'d': 20}]}
+>>> delete(obj, ("c",))
+{'a': [{'b': 1}, {'b': 2}]}
+
+It also provides functions to convert a nested collection into a flatten collection and vice versa.
 This allows to use standard higher-order functions (or similar tools) to manipulate the values.
 
->>> obj = {"a": [{"b": 1}, {"b": 2}]}
 >>> paths = list(flatten(obj))
 >>> paths
-[[{}], ['a', []], ['a', 0, {}], ['a', 1, {}], ['a', 0, 'b', 1], ['a', 1, 'b', 2]]
->>> updates = [[*path[:-1], path[-1] * 10]
-...   for path in flatten(obj)
-...   if fullmatch(path, ["a", ..., "b", ...])]
+[((), {}), (('a',), []), (('a', 0), {}), (('a', 1), {}), (('a', 0, 'b'), 1), (('a', 1, 'b'), 2)]
+>>> updates = [(path, value * 10)
+...   for path, value in paths
+...   if fullmatch(path, ("a", ..., "b"))]
 >>> updates
-[['a', 0, 'b', 10], ['a', 1, 'b', 20]]
->>> for path in updates: set(obj, path[:-1], path[-1])
+[(('a', 0, 'b'), 10), (('a', 1, 'b'), 20)]
+>>> for path, value in updates: set(obj, path, value)
 {'a': [{'b': 10}, {'b': 2}]}
 {'a': [{'b': 10}, {'b': 20}]}
 >>> obj
@@ -43,7 +51,7 @@ _undefined = object()
 
 
 def get(obj, path, default=_undefined):
-    """ Get a value from a JSON-like object using the path.
+    """ Get a value from a nested collection using the path.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
     >>> get(obj, ("a", 0, "b", "c"))
@@ -188,9 +196,9 @@ def flatten(obj, only_leaves=False):
     This functions returns all the paths in the tree structure of the object.
 
     >>> list(flatten({'a': 1, 'b': 1}))
-    [[{}], ['a', 1], ['b', 1]]
+    [((), {}), (('a',), 1), (('b',), 1)]
     >>> list(flatten({'a': {'B': 1}, 'b': {'B': 1}}))
-    [[{}], ['a', {}], ['b', {}], ['a', 'B', 1], ['b', 'B', 1]]
+    [((), {}), (('a',), {}), (('b',), {}), (('a', 'B'), 1), (('b', 'B'), 1)]
 
     By default, it also returns the non-leaf nodes.
     This is useful to reconstruct the object using the [data_tools.unflatten] function.
@@ -199,10 +207,10 @@ def flatten(obj, only_leaves=False):
     This can be used to generate a CSV-like structure.
 
     >>> list(flatten({'a': {'B': 1}, 'b': {'B': 1}}, only_leaves=True))
-    [['a', 'B', 1], ['b', 'B', 1]]
+    [(('a', 'B'), 1), (('b', 'B'), 1)]
 
-    >>> list(flatten({"a": [{"b": 1}, {"b": 2}]}, only_leaves=False))
-    [[{}], ['a', []], ['a', 0, {}], ['a', 1, {}], ['a', 0, 'b', 1], ['a', 1, 'b', 2]]
+    >>> list(flatten({'a': [{'b': 1}, {'b': 2}]}, only_leaves=False))
+    [((), {}), (('a',), []), (('a', 0), {}), (('a', 1), {}), (('a', 0, 'b'), 1), (('a', 1, 'b'), 2)]
     """
     if not obj:
         return
@@ -211,16 +219,16 @@ def flatten(obj, only_leaves=False):
         obj, path = queue.popleft()
         if isinstance(obj, Mapping):
             if not only_leaves:
-                yield [*path, obj.__class__()]
+                yield tuple(path), obj.__class__()
             for key, value in obj.items():
                 queue.append((value, [*path, key]))
         elif isinstance(obj, Iterable) and not isinstance(obj, str):
             if not only_leaves:
-                yield [*path, obj.__class__()]
+                yield tuple(path), obj.__class__()
             for i, value in enumerate(obj):
                 queue.append((value, [*path, i]))
         else:
-            yield [*path, obj]
+            yield tuple(path), obj
 
 
 def unflatten(paths, sort=False):
@@ -228,24 +236,24 @@ def unflatten(paths, sort=False):
 
     The expected input is a list of paths, as returned by the [data_tools.flatten] function.
 
-    >>> unflatten([[{}], ['a', 1], ['b', 1]])
+    >>> unflatten([((), {}), (('a',), 1), (('b',), 1)])
     {'a': 1, 'b': 1}
-    >>> unflatten([[{}], ['a', {}], ['b', {}], ['a', 'B', 1], ['b', 'B', 1]])
+    >>> unflatten([((), {}), (('a',), {}), (('a', 'B'), 1), (('b',), {}), (('b', 'B'), 1)])
     {'a': {'B': 1}, 'b': {'B': 1}}
-    >>> unflatten([[{}], ['a', []], ['a', 0, {}], ['a', 1, {}], ['a', 0, 'b', 1], ['a', 1, 'b', 2]])
+    >>> unflatten([((), {}), (('a',), []), (('a', 0), {}), (('a', 0, 'b'), 1), (('a', 1), {}), (('a', 1, 'b'), 2)])
     {'a': [{'b': 1}, {'b': 2}]}
 
     Internally, this function sets each path in the given order to create the nested object.
     This means that the order of the paths matters.
 
-    >>> unflatten([['a', 0, 'b', 1], ['a', 1, 'b', 2], ['a', 0, {}], ['a', 1, {}], [{}], ['a', []]])
+    >>> unflatten([(('a', 0, 'b'), 1), (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), ((),{}), (('a'), [])])
     Traceback (most recent call last):
     ...
     ValueError: invalid root
 
     The first path must be a single element, which will be the root of the object.
 
-    >>> unflatten([[{}], ['a', 0, 'b', 1], ['a', 1, 'b', 2], ['a', 0, {}], ['a', 1, {}], ['a', []]])
+    >>> unflatten([((), {}), (('a', 0, 'b'), 1) , (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), (('a',), [])])
     Traceback (most recent call last):
     ...
     KeyError: 'a'
@@ -254,24 +262,24 @@ def unflatten(paths, sort=False):
     One way to ensure this is to sort the paths by length.
     This way, the paths that set the intermediate values are processed first.
 
-    >>> unflatten([['a', 0, 'b', 1], ['a', 1, 'b', 2], ['a', 0, {}], ['a', 1, {}], [{}], ['a', []]], sort=True)
+    >>> unflatten([((), {}), (('a', 0, 'b'), 1) , (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), (('a',), [])], sort=True)
     {'a': [{'b': 1}, {'b': 2}]}
     """
     if not paths:
         return None
     
     if sort:
-        paths = sorted(paths, key=lambda x: len(x))
+        paths = sorted(paths, key=lambda x: len(x[0]))
 
     paths = iter(paths)
-    base = next(paths)
-    if len(base) != 1:
+    root, base = next(paths)
+    if len(root) != 0:
         raise ValueError("invalid root")
-    obj = base[0]
-    for path in paths:
-        if len(path) < 2:
+    obj = base
+    for path, value in paths:
+        if len(path) < 1:
             raise ValueError("invalid path")
-        set(obj, path[:-1], path[-1])
+        set(obj, path, value)
     return obj
 
 
@@ -327,32 +335,32 @@ def fullmatch(path, *patterns, wildcard=...):
 
     The semantics are the same as the [data_tools.match] function.
     
-    >>> path = ["a", "b", "c"]
-    >>> fullmatch(path, ["a"])
+    >>> path = ("a", "b", "c")
+    >>> fullmatch(path, ("a"))
     False
-    >>> fullmatch(path, ["a", "b"])
+    >>> fullmatch(path, ("a", "b"))
     False
-    >>> fullmatch(path, ["a", "b", "c"])
+    >>> fullmatch(path, ("a", "b", "c"))
     True
-    >>> fullmatch(path, ["a", "b", "c", "d"])
+    >>> fullmatch(path, ("a", "b", "c", "d"))
     False
 
-    >>> fullmatch(path, ["a", ..., ...])
+    >>> fullmatch(path, ("a", ..., ...))
     True
-    >>> fullmatch(path, [..., "b", ...])
+    >>> fullmatch(path, (..., "b", ...))
     True
-    >>> fullmatch(path, [..., ..., "c"])
+    >>> fullmatch(path, (..., ..., "c"))
     True
-    >>> fullmatch(path, ["A", ..., ...])
+    >>> fullmatch(path, ("A", ..., ...))
     False
-    >>> fullmatch(path, [..., "B", ...])
+    >>> fullmatch(path, (..., "B", ...))
     False
-    >>> fullmatch(path, [..., ..., "C"])
+    >>> fullmatch(path, (..., ..., "C"))
     False
-    >>> fullmatch(path, ["A", ..., ..., ...])
+    >>> fullmatch(path, ("A", ..., ..., ...))
     False
 
-    >>> fullmatch(path, ["a", ..., ...], ["A", ..., ...])
+    >>> fullmatch(path, ("a", ..., ...), ("A", ..., ...))
     True
     """
     return any(_match(path, pattern, True, wildcard) for pattern in patterns)
@@ -377,6 +385,79 @@ def _match(path, pattern, full, wildcard):
     except StopIteration:
         # Path is same length as pattern
         return True
+    
+
+def parse(path, sep=".", quote=None):
+    """ Parse a path string into a sequence of keys and indices.
+    The separator is `.` by default, but it can be changed.
+
+    >>> parse("")
+    ()
+    >>> parse("a.b.c")
+    ('a', 'b', 'c')
+    >>> parse("a/b/c", sep="/")
+    ('a', 'b', 'c')
+
+    The trailing, leading and consecutive separators are ignored.
+
+    >>> parse("a.b.")
+    ('a', 'b')
+    >>> parse(".a.b")
+    ('a', 'b')
+    >>> parse("a..b.c")
+    ('a', 'b', 'c')
+
+    If a quote character is found, the path is parsed as a string.
+    The default quote characters are `"` and `'`, but they can be changed.
+    This is useful for keys that contain the separator.
+
+    >>> parse("a.b.c")
+    ('a', 'b', 'c')
+    >>> parse("'a.b'.c")
+    ('a.b', 'c')
+    >>> parse('"a.b".c')
+    ('a.b', 'c')
+    >>> parse("/a.b/.c", quote="/")
+    ('a.b', 'c')
+
+    The numeric parts are parsed as base 10 integers and the rest as strings.
+    This can be avoided quoting the numeric parts.
+
+    >>> parse("a.0.b.-1")
+    ('a', 0, 'b', -1)
+    >>> parse("a.'0'.b.-1")
+    ('a', '0', 'b', -1)
+    """
+
+    quotes = [quote] if quote else ['"', "'"]
+    result = []
+    last = -1
+    quote = None
+    path += sep
+    for i, c in enumerate(path):
+        # State 1: Normal character
+        if c == sep and not quote:
+            part = path[last+1:i]
+            if part:
+                # Remove quotes
+                if part[0] in quotes and part[0] == part[-1]:
+                    part = part[1:-1]
+                # Or parse as int if possible
+                else:
+                    try:
+                        part = int(part)
+                    except ValueError:
+                        pass
+                result.append(part)
+            last = i
+        # State 2: Opening quote
+        elif not quote and c in quotes:
+            quote = c
+        # State 3: Closing quote
+        elif quote == c:
+            quote = None
+    return tuple(result)
+        
 
 
 if __name__ == "__main__":

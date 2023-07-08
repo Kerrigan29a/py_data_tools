@@ -1,23 +1,33 @@
 # Module [data_tools](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L1)
-This module provides several functions to work with JSON-like objects.
+This module provides several functions to work with nested collections of data.
+One example of nested collections are JSON-like objects.
 
-It provides functions to manipulate the values of a JSON-like object using a path-like notation.
+It provides functions to manipulate the values of nested collection using a path-like notation.
 A path is a sequence of keys and indices that can be used to access a value.
 
-It also provides functions to convert a nested JSON-like object into a flatten CSV-like object and vice versa.
+```python
+>>> obj = {"a": [{"b": 1}, {"b": 2}], "c": [{"d": 10}, {"d": 20}]}
+>>> get(obj, ("c", 0, "d"))
+10
+>>> set(obj, ("c", 0, "d"), 100)
+{'a': [{'b': 1}, {'b': 2}], 'c': [{'d': 100}, {'d': 20}]}
+>>> delete(obj, ("c",))
+{'a': [{'b': 1}, {'b': 2}]}
+```
+
+It also provides functions to convert a nested collection into a flatten collection and vice versa.
 This allows to use standard higher-order functions (or similar tools) to manipulate the values.
 
 ```python
->>> obj = {"a": [{"b": 1}, {"b": 2}]}
 >>> paths = list(flatten(obj))
 >>> paths
-[[{}], ['a', []], ['a', 0, {}], ['a', 1, {}], ['a', 0, 'b', 1], ['a', 1, 'b', 2]]
->>> updates = [[*path[:-1], path[-1] * 10]
-...   for path in flatten(obj)
-...   if fullmatch(path, ["a", ..., "b", ...])]
+[((), {}), (('a',), []), (('a', 0), {}), (('a', 1), {}), (('a', 0, 'b'), 1), (('a', 1, 'b'), 2)]
+>>> updates = [(path, value * 10)
+...   for path, value in paths
+...   if fullmatch(path, ("a", ..., "b"))]
 >>> updates
-[['a', 0, 'b', 10], ['a', 1, 'b', 20]]
->>> for path in updates: set(obj, path[:-1], path[-1])
+[(('a', 0, 'b'), 10), (('a', 1, 'b'), 20)]
+>>> for path, value in updates: set(obj, path, value)
 {'a': [{'b': 10}, {'b': 2}]}
 {'a': [{'b': 10}, {'b': 20}]}
 >>> obj
@@ -27,7 +37,7 @@ This allows to use standard higher-order functions (or similar tools) to manipul
 ```
 
 
-## Function [data_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L45)
+## Function [data_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L53)
 ```python
 def get(obj, path, default=_undefined): ...
 ```
@@ -60,7 +70,7 @@ It is possible to provide a default value to return in case the path does not ex
 ```
 
 
-## Function [data_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L78)
+## Function [data_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L86)
 ```python
 def set(obj, path, value): ...
 ```
@@ -90,7 +100,7 @@ To append a new value in a list-like object, use as index the length of the list
 
 This function returns the object with the new value.
 
-## Function [data_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L114)
+## Function [data_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L122)
 ```python
 def delete(obj, path): ...
 ```
@@ -116,7 +126,7 @@ KeyError: 'c'
 
 This function returns the object with the deleted value.
 
-## Function [data_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L147)
+## Function [data_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L155)
 ```python
 def update(obj, path, func): ...
 ```
@@ -138,7 +148,7 @@ IndexError: list index out of range
 
 This function returns the updated object.
 
-## Function [data_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L185)
+## Function [data_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L193)
 ```python
 def flatten(obj, only_leaves=False): ...
 ```
@@ -148,9 +158,9 @@ This functions returns all the paths in the tree structure of the object.
 
 ```python
 >>> list(flatten({'a': 1, 'b': 1}))
-[[{}], ['a', 1], ['b', 1]]
+[((), {}), (('a',), 1), (('b',), 1)]
 >>> list(flatten({'a': {'B': 1}, 'b': {'B': 1}}))
-[[{}], ['a', {}], ['b', {}], ['a', 'B', 1], ['b', 'B', 1]]
+[((), {}), (('a',), {}), (('b',), {}), (('a', 'B'), 1), (('b', 'B'), 1)]
 ```
 
 By default, it also returns the non-leaf nodes.
@@ -161,16 +171,16 @@ This can be used to generate a CSV-like structure.
 
 ```python
 >>> list(flatten({'a': {'B': 1}, 'b': {'B': 1}}, only_leaves=True))
-[['a', 'B', 1], ['b', 'B', 1]]
+[(('a', 'B'), 1), (('b', 'B'), 1)]
 ```
 
 ```python
->>> list(flatten({"a": [{"b": 1}, {"b": 2}]}, only_leaves=False))
-[[{}], ['a', []], ['a', 0, {}], ['a', 1, {}], ['a', 0, 'b', 1], ['a', 1, 'b', 2]]
+>>> list(flatten({'a': [{'b': 1}, {'b': 2}]}, only_leaves=False))
+[((), {}), (('a',), []), (('a', 0), {}), (('a', 1), {}), (('a', 0, 'b'), 1), (('a', 1, 'b'), 2)]
 ```
 
 
-## Function [data_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L226)
+## Function [data_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L234)
 ```python
 def unflatten(paths, sort=False): ...
 ```
@@ -179,11 +189,11 @@ Unflatten (or [data_tools.unnest]) a list of paths.
 The expected input is a list of paths, as returned by the [data_tools.flatten] function.
 
 ```python
->>> unflatten([[{}], ['a', 1], ['b', 1]])
+>>> unflatten([((), {}), (('a',), 1), (('b',), 1)])
 {'a': 1, 'b': 1}
->>> unflatten([[{}], ['a', {}], ['b', {}], ['a', 'B', 1], ['b', 'B', 1]])
+>>> unflatten([((), {}), (('a',), {}), (('a', 'B'), 1), (('b',), {}), (('b', 'B'), 1)])
 {'a': {'B': 1}, 'b': {'B': 1}}
->>> unflatten([[{}], ['a', []], ['a', 0, {}], ['a', 1, {}], ['a', 0, 'b', 1], ['a', 1, 'b', 2]])
+>>> unflatten([((), {}), (('a',), []), (('a', 0), {}), (('a', 0, 'b'), 1), (('a', 1), {}), (('a', 1, 'b'), 2)])
 {'a': [{'b': 1}, {'b': 2}]}
 ```
 
@@ -191,7 +201,7 @@ Internally, this function sets each path in the given order to create the nested
 This means that the order of the paths matters.
 
 ```python
->>> unflatten([['a', 0, 'b', 1], ['a', 1, 'b', 2], ['a', 0, {}], ['a', 1, {}], [{}], ['a', []]])
+>>> unflatten([(('a', 0, 'b'), 1), (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), ((),{}), (('a'), [])])
 Traceback (most recent call last):
 ...
 ValueError: invalid root
@@ -200,7 +210,7 @@ ValueError: invalid root
 The first path must be a single element, which will be the root of the object.
 
 ```python
->>> unflatten([[{}], ['a', 0, 'b', 1], ['a', 1, 'b', 2], ['a', 0, {}], ['a', 1, {}], ['a', []]])
+>>> unflatten([((), {}), (('a', 0, 'b'), 1) , (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), (('a',), [])])
 Traceback (most recent call last):
 ...
 KeyError: 'a'
@@ -211,24 +221,24 @@ One way to ensure this is to sort the paths by length.
 This way, the paths that set the intermediate values are processed first.
 
 ```python
->>> unflatten([['a', 0, 'b', 1], ['a', 1, 'b', 2], ['a', 0, {}], ['a', 1, {}], [{}], ['a', []]], sort=True)
+>>> unflatten([((), {}), (('a', 0, 'b'), 1) , (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), (('a',), [])], sort=True)
 {'a': [{'b': 1}, {'b': 2}]}
 ```
 
 
-## Function [data_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L278)
+## Function [data_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L286)
 ```python
 def unnest(*args, **kwargs): ...
 ```
 Alias for [data_tools.flatten]
 
-## Function [data_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L285)
+## Function [data_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L293)
 ```python
 def nest(*args, **kwargs): ...
 ```
 Alias for [data_tools.unflatten]
 
-## Function [data_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L292)
+## Function [data_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L300)
 ```python
 def match(path, *patterns, wildcard=...): ...
 ```
@@ -268,7 +278,7 @@ True
 ```
 
 
-## Function [data_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L325)
+## Function [data_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L333)
 ```python
 def fullmatch(path, *patterns, wildcard=...): ...
 ```
@@ -277,37 +287,90 @@ Check for a match in the whole path.
 The semantics are the same as the [data_tools.match] function.
 
 ```python
->>> path = ["a", "b", "c"]
->>> fullmatch(path, ["a"])
+>>> path = ("a", "b", "c")
+>>> fullmatch(path, ("a"))
 False
->>> fullmatch(path, ["a", "b"])
+>>> fullmatch(path, ("a", "b"))
 False
->>> fullmatch(path, ["a", "b", "c"])
+>>> fullmatch(path, ("a", "b", "c"))
 True
->>> fullmatch(path, ["a", "b", "c", "d"])
+>>> fullmatch(path, ("a", "b", "c", "d"))
 False
 ```
 
 ```python
->>> fullmatch(path, ["a", ..., ...])
+>>> fullmatch(path, ("a", ..., ...))
 True
->>> fullmatch(path, [..., "b", ...])
+>>> fullmatch(path, (..., "b", ...))
 True
->>> fullmatch(path, [..., ..., "c"])
+>>> fullmatch(path, (..., ..., "c"))
 True
->>> fullmatch(path, ["A", ..., ...])
+>>> fullmatch(path, ("A", ..., ...))
 False
->>> fullmatch(path, [..., "B", ...])
+>>> fullmatch(path, (..., "B", ...))
 False
->>> fullmatch(path, [..., ..., "C"])
+>>> fullmatch(path, (..., ..., "C"))
 False
->>> fullmatch(path, ["A", ..., ..., ...])
+>>> fullmatch(path, ("A", ..., ..., ...))
 False
 ```
 
 ```python
->>> fullmatch(path, ["a", ..., ...], ["A", ..., ...])
+>>> fullmatch(path, ("a", ..., ...), ("A", ..., ...))
 True
+```
+
+
+## Function [data_tools.parse](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L390)
+```python
+def parse(path, sep='.', quote=None): ...
+```
+Parse a path string into a sequence of keys and indices.
+The separator is `.` by default, but it can be changed.
+
+```python
+>>> parse("")
+()
+>>> parse("a.b.c")
+('a', 'b', 'c')
+>>> parse("a/b/c", sep="/")
+('a', 'b', 'c')
+```
+
+The trailing, leading and consecutive separators are ignored.
+
+```python
+>>> parse("a.b.")
+('a', 'b')
+>>> parse(".a.b")
+('a', 'b')
+>>> parse("a..b.c")
+('a', 'b', 'c')
+```
+
+If a quote character is found, the path is parsed as a string.
+The default quote characters are `"` and `'`, but they can be changed.
+This is useful for keys that contain the separator.
+
+```python
+>>> parse("a.b.c")
+('a', 'b', 'c')
+>>> parse("'a.b'.c")
+('a.b', 'c')
+>>> parse('"a.b".c')
+('a.b', 'c')
+>>> parse("/a.b/.c", quote="/")
+('a.b', 'c')
+```
+
+The numeric parts are parsed as base 10 integers and the rest as strings.
+This can be avoided quoting the numeric parts.
+
+```python
+>>> parse("a.0.b.-1")
+('a', 0, 'b', -1)
+>>> parse("a.'0'.b.-1")
+('a', '0', 'b', -1)
 ```
 
 
@@ -339,3 +402,5 @@ True
 [`data_tools.fullmatch`]: #function-data_tools-fullmatch "Function fullmatch"
 [data_tools._match]: #function-data_tools-_match "Function _match"
 [`data_tools._match`]: #function-data_tools-_match "Function _match"
+[data_tools.parse]: #function-data_tools-parse "Function parse"
+[`data_tools.parse`]: #function-data_tools-parse "Function parse"
