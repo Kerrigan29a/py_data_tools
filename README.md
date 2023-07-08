@@ -3,7 +3,7 @@ This module provides several functions to work with nested collections of data.
 One example of nested collections are JSON-like objects.
 
 It provides functions to manipulate the values of nested collection using a path-like notation.
-A path is a sequence of keys and indices that can be used to access a value.
+A path is a sequence of keys (`str`) and indices (`int`) that can be used to access a value.
 
 ```python
 >>> obj = {"a": [{"b": 1}, {"b": 2}], "c": [{"d": 10}, {"d": 20}]}
@@ -13,6 +13,13 @@ A path is a sequence of keys and indices that can be used to access a value.
 {'a': [{'b': 1}, {'b': 2}], 'c': [{'d': 100}, {'d': 20}]}
 >>> delete(obj, ("c",))
 {'a': [{'b': 1}, {'b': 2}]}
+```
+
+This functions also support paths encoded as strings.
+
+```python
+>>> get(obj, "a.0.b")
+1
 ```
 
 It also provides functions to convert a nested collection into a flatten collection and vice versa.
@@ -37,11 +44,11 @@ This allows to use standard higher-order functions (or similar tools) to manipul
 ```
 
 
-## Function [data_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L53)
+## Function [data_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L58)
 ```python
-def get(obj, path, default=_undefined): ...
+def get(obj, path, default=_undefined, autoparse=True): ...
 ```
-Get a value from a JSON-like object using the path.
+Get a value from a nested collection using the `path`.
 
 ```python
 >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
@@ -51,7 +58,7 @@ Get a value from a JSON-like object using the path.
 100
 ```
 
-If the path does not exist, an exception is raised.
+If the `path` does not exist, an exception is raised.
 
 ```python
 >>> get(obj, ("a", 2, "b", "c"))
@@ -65,26 +72,33 @@ It is possible to provide a default value to return in case the path does not ex
 ```python
 >>> get(obj, ("a", 2, "b", "c"), "default")
 'default'
->>> get(obj, ("a",))
-[{'b': {'c': 10}}, {'b': {'c': 100}}]
 ```
 
+If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
 
-## Function [data_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L86)
 ```python
-def set(obj, path, value): ...
+>>> get(obj, "a.0.b.c")
+10
 ```
-Modify a value.
 
-This is useful to modify a value in an object or to insert a new value in a dict-like object. 
+
+## Function [data_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L95)
+```python
+def set(obj, path, value, autoparse=True): ...
+```
+Modify or append a `value`.
+
+This is useful to modify a `value` in an object or to insert a new `value` in a dict-like object. 
 
 ```python
 >>> obj = {"a": [{"b": 1}, {"b": 2}]}
 >>> set(obj, ("a", 0, "b"), 10)
 {'a': [{'b': 10}, {'b': 2}]}
+>>> set(obj, ("z",), 100)
+{'a': [{'b': 10}, {'b': 2}], 'z': 100}
 ```
 
-To append a new value in a list-like object, use as index the length of the list at the moment of the insertion.
+To append a new `value` in a list-like object, use as index the length of the list at the moment of the insertion.
 
 ```python
 >>> obj = {"a": []}
@@ -98,11 +112,20 @@ To append a new value in a list-like object, use as index the length of the list
 {'a': [{'b': 1}, {'b': 2}]}
 ```
 
-This function returns the object with the new value.
+This function returns the object with the new `value`.
 
-## Function [data_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L122)
+If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+
 ```python
-def delete(obj, path): ...
+>>> obj = {"a": [{"b": 1}, {"b": 2}]}
+>>> set(obj, "a.0.b", 10)
+{'a': [{'b': 10}, {'b': 2}]}
+```
+
+
+## Function [data_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L140)
+```python
+def delete(obj, path, autoparse=True): ...
 ```
 Delete a value.
 
@@ -126,9 +149,18 @@ KeyError: 'c'
 
 This function returns the object with the deleted value.
 
-## Function [data_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L155)
+If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+
 ```python
-def update(obj, path, func): ...
+>>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
+>>> delete(obj, "a.0.b.c")
+{'a': [{'b': {}}, {'b': {'c': 100}}]}
+```
+
+
+## Function [data_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L180)
+```python
+def update(obj, path, func, autoparse=True): ...
 ```
 Update a value based on the current value.
 
@@ -148,7 +180,16 @@ IndexError: list index out of range
 
 This function returns the updated object.
 
-## Function [data_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L193)
+If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+
+```python
+>>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
+>>> update(obj, "a.0.b.c", lambda x: x + 1)
+{'a': [{'b': {'c': 11}}, {'b': {'c': 100}}]}
+```
+
+
+## Function [data_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L233)
 ```python
 def flatten(obj, only_leaves=False): ...
 ```
@@ -180,7 +221,7 @@ This can be used to generate a CSV-like structure.
 ```
 
 
-## Function [data_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L234)
+## Function [data_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L274)
 ```python
 def unflatten(paths, sort=False): ...
 ```
@@ -226,19 +267,19 @@ This way, the paths that set the intermediate values are processed first.
 ```
 
 
-## Function [data_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L286)
+## Function [data_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L326)
 ```python
 def unnest(*args, **kwargs): ...
 ```
 Alias for [data_tools.flatten]
 
-## Function [data_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L293)
+## Function [data_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L333)
 ```python
 def nest(*args, **kwargs): ...
 ```
 Alias for [data_tools.unflatten]
 
-## Function [data_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L300)
+## Function [data_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L340)
 ```python
 def match(path, *patterns, wildcard=...): ...
 ```
@@ -278,7 +319,7 @@ True
 ```
 
 
-## Function [data_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L333)
+## Function [data_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L373)
 ```python
 def fullmatch(path, *patterns, wildcard=...): ...
 ```
@@ -321,7 +362,7 @@ True
 ```
 
 
-## Function [data_tools.parse](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L390)
+## Function [data_tools.parse](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L430)
 ```python
 def parse(path, sep='.', quote=None): ...
 ```
@@ -386,6 +427,8 @@ This can be avoided quoting the numeric parts.
 [`data_tools.delete`]: #function-data_tools-delete "Function delete"
 [data_tools.update]: #function-data_tools-update "Function update"
 [`data_tools.update`]: #function-data_tools-update "Function update"
+[data_tools._try_parse]: #function-data_tools-_try_parse "Function _try_parse"
+[`data_tools._try_parse`]: #function-data_tools-_try_parse "Function _try_parse"
 [data_tools._traverse]: #function-data_tools-_traverse "Function _traverse"
 [`data_tools._traverse`]: #function-data_tools-_traverse "Function _traverse"
 [data_tools.flatten]: #function-data_tools-flatten "Function flatten"

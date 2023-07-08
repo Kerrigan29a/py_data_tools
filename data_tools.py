@@ -9,7 +9,7 @@ This module provides several functions to work with nested collections of data.
 One example of nested collections are JSON-like objects.
 
 It provides functions to manipulate the values of nested collection using a path-like notation.
-A path is a sequence of keys and indices that can be used to access a value.
+A path is a sequence of keys (`str`) and indices (`int`) that can be used to access a value.
 
 >>> obj = {"a": [{"b": 1}, {"b": 2}], "c": [{"d": 10}, {"d": 20}]}
 >>> get(obj, ("c", 0, "d"))
@@ -18,6 +18,11 @@ A path is a sequence of keys and indices that can be used to access a value.
 {'a': [{'b': 1}, {'b': 2}], 'c': [{'d': 100}, {'d': 20}]}
 >>> delete(obj, ("c",))
 {'a': [{'b': 1}, {'b': 2}]}
+
+This functions also support paths encoded as strings.
+
+>>> get(obj, "a.0.b")
+1
 
 It also provides functions to convert a nested collection into a flatten collection and vice versa.
 This allows to use standard higher-order functions (or similar tools) to manipulate the values.
@@ -50,8 +55,8 @@ from collections import deque
 _undefined = object()
 
 
-def get(obj, path, default=_undefined):
-    """ Get a value from a nested collection using the path.
+def get(obj, path, default=_undefined, autoparse=True):
+    """Get a value from a nested collection using the `path`.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
     >>> get(obj, ("a", 0, "b", "c"))
@@ -59,7 +64,7 @@ def get(obj, path, default=_undefined):
     >>> get(obj, ("a", 1, "b", "c"))
     100
 
-    If the path does not exist, an exception is raised.
+    If the `path` does not exist, an exception is raised.
 
     >>> get(obj, ("a", 2, "b", "c"))
     Traceback (most recent call last):
@@ -70,11 +75,15 @@ def get(obj, path, default=_undefined):
 
     >>> get(obj, ("a", 2, "b", "c"), "default")
     'default'
-    >>> get(obj, ("a",))
-    [{'b': {'c': 10}}, {'b': {'c': 100}}]
+
+    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+
+    >>> get(obj, "a.0.b.c")
+    10
     """
     if not path:
         return obj
+    path = _try_parse(path, autoparse)
     try:
         return _traverse(obj, path)
     except (KeyError, IndexError) as e:
@@ -83,16 +92,18 @@ def get(obj, path, default=_undefined):
         return default
 
 
-def set(obj, path, value):
-    """ Modify a value.
+def set(obj, path, value, autoparse=True):
+    """Modify or append a `value`.
 
-    This is useful to modify a value in an object or to insert a new value in a dict-like object. 
+    This is useful to modify a `value` in an object or to insert a new `value` in a dict-like object.
 
     >>> obj = {"a": [{"b": 1}, {"b": 2}]}
     >>> set(obj, ("a", 0, "b"), 10)
     {'a': [{'b': 10}, {'b': 2}]}
+    >>> set(obj, ("z",), 100)
+    {'a': [{'b': 10}, {'b': 2}], 'z': 100}
 
-    To append a new value in a list-like object, use as index the length of the list at the moment of the insertion.
+    To append a new `value` in a list-like object, use as index the length of the list at the moment of the insertion.
 
     >>> obj = {"a": []}
     >>> set(obj, ("a", 0), {})
@@ -104,10 +115,17 @@ def set(obj, path, value):
     >>> set(obj, ("a", -1, "b"), 2)
     {'a': [{'b': 1}, {'b': 2}]}
 
-    This function returns the object with the new value.
+    This function returns the object with the new `value`.
+
+    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+
+    >>> obj = {"a": [{"b": 1}, {"b": 2}]}
+    >>> set(obj, "a.0.b", 10)
+    {'a': [{'b': 10}, {'b': 2}]}
     """
     if not path:
         raise ValueError("path must not be empty")
+    path = _try_parse(path, autoparse)
     cur = _traverse(obj, path[:-1])
     try:
         cur[path[-1]] = value
@@ -119,15 +137,15 @@ def set(obj, path, value):
     return obj
 
 
-def delete(obj, path):
-    """ Delete a value.
+def delete(obj, path, autoparse=True):
+    """Delete a value.
 
     Deleting the last value in an object does not delete that object.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
     >>> delete(obj, ["a", 0, "b", "c"])
     {'a': [{'b': {}}, {'b': {'c': 100}}]}
-    >>> delete(obj, ["a", 1, "b", "c"]) 
+    >>> delete(obj, ["a", 1, "b", "c"])
     {'a': [{'b': {}}, {'b': {}}]}
     >>> delete(obj, ["a", 2, "b"])
     Traceback (most recent call last):
@@ -139,9 +157,16 @@ def delete(obj, path):
     KeyError: 'c'
 
     This function returns the object with the deleted value.
+
+    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+
+    >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
+    >>> delete(obj, "a.0.b.c")
+    {'a': [{'b': {}}, {'b': {'c': 100}}]}
     """
     if not path:
         raise ValueError("path must not be empty")
+    path = _try_parse(path, autoparse)
     cur = _traverse(obj, path[:-1])
     try:
         del cur[path[-1]]
@@ -152,8 +177,8 @@ def delete(obj, path):
     return obj
 
 
-def update(obj, path, func):
-    """ Update a value based on the current value.
+def update(obj, path, func, autoparse=True):
+    """Update a value based on the current value.
 
     This is an efficient alternative to getting a value, modifying it and setting it back.
 
@@ -168,9 +193,16 @@ def update(obj, path, func):
     IndexError: list index out of range
 
     This function returns the updated object.
+
+    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+
+    >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
+    >>> update(obj, "a.0.b.c", lambda x: x + 1)
+    {'a': [{'b': {'c': 11}}, {'b': {'c': 100}}]}
     """
     if not path:
         raise ValueError("path must not be empty")
+    path = _try_parse(path, autoparse)
     cur = _traverse(obj, path[:-1])
     try:
         cur[path[-1]] = func(cur[path[-1]])
@@ -179,9 +211,17 @@ def update(obj, path, func):
     return obj
 
 
+def _try_parse(path, autoparse):
+    if isinstance(path, str):
+        if autoparse:
+            path = parse(path)
+        else:
+            raise TypeError("path must be an iterable of keys or indexes")
+    return path
+
+
 def _traverse(obj, path):
-    if isinstance(path, str) or not isinstance(path, Iterable):
-        raise TypeError("path must be an iterable of keys")
+    assert isinstance(path, Iterable) and not isinstance(path, str)
     for key in path:
         try:
             obj = obj[key]
@@ -191,7 +231,7 @@ def _traverse(obj, path):
 
 
 def flatten(obj, only_leaves=False):
-    """ Flatten (or [data_tools.unnest]) a nested object.
+    """Flatten (or [data_tools.unnest]) a nested object.
 
     This functions returns all the paths in the tree structure of the object.
 
@@ -232,7 +272,7 @@ def flatten(obj, only_leaves=False):
 
 
 def unflatten(paths, sort=False):
-    """ Unflatten (or [data_tools.unnest]) a list of paths.
+    """Unflatten (or [data_tools.unnest]) a list of paths.
 
     The expected input is a list of paths, as returned by the [data_tools.flatten] function.
 
@@ -267,7 +307,7 @@ def unflatten(paths, sort=False):
     """
     if not paths:
         return None
-    
+
     if sort:
         paths = sorted(paths, key=lambda x: len(x[0]))
 
@@ -298,7 +338,7 @@ def nest(*args, **kwargs):
 
 
 def match(path, *patterns, wildcard=...):
-    """ Check for a match at the beginning of a path.
+    """Check for a match at the beginning of a path.
 
     >>> path = ["a", "b", "c"]
     >>> match(path, ["a"])
@@ -331,10 +371,10 @@ def match(path, *patterns, wildcard=...):
 
 
 def fullmatch(path, *patterns, wildcard=...):
-    """ Check for a match in the whole path.
+    """Check for a match in the whole path.
 
     The semantics are the same as the [data_tools.match] function.
-    
+
     >>> path = ("a", "b", "c")
     >>> fullmatch(path, ("a"))
     False
@@ -385,10 +425,10 @@ def _match(path, pattern, full, wildcard):
     except StopIteration:
         # Path is same length as pattern
         return True
-    
+
 
 def parse(path, sep=".", quote=None):
-    """ Parse a path string into a sequence of keys and indices.
+    """Parse a path string into a sequence of keys and indices.
     The separator is `.` by default, but it can be changed.
 
     >>> parse("")
@@ -437,7 +477,7 @@ def parse(path, sep=".", quote=None):
     for i, c in enumerate(path):
         # State 1: Normal character
         if c == sep and not quote:
-            part = path[last+1:i]
+            part = path[last + 1 : i]
             if part:
                 # Remove quotes
                 if part[0] in quotes and part[0] == part[-1]:
@@ -457,10 +497,10 @@ def parse(path, sep=".", quote=None):
         elif quote == c:
             quote = None
     return tuple(result)
-        
 
 
 if __name__ == "__main__":
     import doctest
+
     result = doctest.testmod()
     exit(int(bool(result.failed)))
