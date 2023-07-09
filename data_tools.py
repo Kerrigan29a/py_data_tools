@@ -83,7 +83,7 @@ def get(obj, path, default=_undefined, autoparse=True):
     """
     if not path:
         return obj
-    path = _try_parse(path, autoparse)
+    path = _try_parse(path, autoparse, None, "path")
     try:
         return _traverse(obj, path)
     except (KeyError, IndexError) as e:
@@ -125,7 +125,7 @@ def set(obj, path, value, autoparse=True):
     """
     if not path:
         raise ValueError("path must not be empty")
-    path = _try_parse(path, autoparse)
+    path = _try_parse(path, autoparse, None, "path")
     cur = _traverse(obj, path[:-1])
     try:
         cur[path[-1]] = value
@@ -166,7 +166,7 @@ def delete(obj, path, autoparse=True):
     """
     if not path:
         raise ValueError("path must not be empty")
-    path = _try_parse(path, autoparse)
+    path = _try_parse(path, autoparse, None, "path")
     cur = _traverse(obj, path[:-1])
     try:
         del cur[path[-1]]
@@ -192,6 +192,15 @@ def update(obj, path, func, autoparse=True):
     ...
     IndexError: list index out of range
 
+    However, this function does not allow appending a new value in a list-like object.
+
+    >>> obj = {"a": []}
+    >>> update(obj, ["a", 0], lambda x: {})
+    Traceback (most recent call last):
+    ...
+    IndexError: list index out of range
+    
+
     This function returns the updated object.
 
     If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
@@ -202,7 +211,7 @@ def update(obj, path, func, autoparse=True):
     """
     if not path:
         raise ValueError("path must not be empty")
-    path = _try_parse(path, autoparse)
+    path = _try_parse(path, autoparse, None, "path")
     cur = _traverse(obj, path[:-1])
     try:
         cur[path[-1]] = func(cur[path[-1]])
@@ -211,12 +220,12 @@ def update(obj, path, func, autoparse=True):
     return obj
 
 
-def _try_parse(path, autoparse):
+def _try_parse(path, autoparse, wildcard_chr, name):
     if isinstance(path, str):
         if autoparse:
-            path = parse(path)
+            path = parse(path, wildcard_chr=wildcard_chr)
         else:
-            raise TypeError("path must be an iterable of keys or indexes")
+            raise TypeError(f"{name} must be an iterable of keys or indexes")
     return path
 
 
@@ -337,7 +346,7 @@ def nest(*args, **kwargs):
     return unflatten(*args, **kwargs)
 
 
-def match(path, *patterns, wildcard=...):
+def match(path, *patterns, wildcard_obj=..., autoparse=True, wildcard_chr=None):
     """Check for a match at the beginning of a path.
 
     >>> path = ["a", "b", "c"]
@@ -350,8 +359,8 @@ def match(path, *patterns, wildcard=...):
     >>> match(path, ["a", "b", "c", "d"])
     False
 
-    The patterns can contain a wildcard, to match any value.
-    By default, the wildcard is `...`, but it can be changed.
+    The patterns can contain a `wildcard_obj`, to match any value.
+    By default, the `wildcard_obj` is `...`, but it can be changed.
 
     >>> match(path, ["a", ...])
     True
@@ -366,11 +375,31 @@ def match(path, *patterns, wildcard=...):
 
     >>> match(path, ["a"], ["A"])
     True
+    
+    If the the given `path` or the `patterns` are strings and `autoparse` is `True`, they will be converted using the [data_tools.parse] function.
+
+    >>> match("a.b.c", ["a", "b", "c"])
+    True
+    >>> match("a.b.c", ["a", "b", "c"], autoparse=False)
+    Traceback (most recent call last):
+    ...
+    TypeError: path must be an iterable of keys or indexes
+    >>> match(("a", "b", "c"), "a.b.c")
+    True
+    >>> match(("a", "b", "c"), "a.b.c", autoparse=False)
+    Traceback (most recent call last):
+    ...
+    TypeError: pattern must be an iterable of keys or indexes
+
+    If `wildcard_chr` is given, it will be passed to the [data_tools.parse] function.
+
+    >>> match("a.b.c", "a.?", wildcard_chr="?")
+    True
     """
-    return any(_match(path, pattern, False, wildcard) for pattern in patterns)
+    return any(_match(path, pattern, False, wildcard_obj, autoparse, wildcard_chr) for pattern in patterns)
 
 
-def fullmatch(path, *patterns, wildcard=...):
+def fullmatch(path, *patterns, wildcard_obj=..., autoparse=True, wildcard_chr=None):
     """Check for a match in the whole path.
 
     The semantics are the same as the [data_tools.match] function.
@@ -402,11 +431,16 @@ def fullmatch(path, *patterns, wildcard=...):
 
     >>> fullmatch(path, ("a", ..., ...), ("A", ..., ...))
     True
+
+    >>> fullmatch("a.b.c", "a.?.?", wildcard_chr="?")
+    True
     """
-    return any(_match(path, pattern, True, wildcard) for pattern in patterns)
+    return any(_match(path, pattern, True, wildcard_obj, autoparse, wildcard_chr) for pattern in patterns)
 
 
-def _match(path, pattern, full, wildcard):
+def _match(path, pattern, full, wildcard_obj, autoparse, wildcard_chr):
+    path = _try_parse(path, autoparse, wildcard_chr, "path")
+    pattern = _try_parse(pattern, autoparse, wildcard_chr, "pattern")
     it = iter(path)
     for p in pattern:
         try:
@@ -414,7 +448,7 @@ def _match(path, pattern, full, wildcard):
         except StopIteration:
             # Patterns are longer than path
             return False
-        if p is wildcard:
+        if p is wildcard_obj:
             continue
         if p != curr:
             return False
@@ -427,7 +461,7 @@ def _match(path, pattern, full, wildcard):
         return True
 
 
-def parse(path, sep=".", quote=None):
+def parse(path, sep_chr=".", quote_chr=None, wildcard_chr=None, wildcard_obj=...):
     """Parse a path string into a sequence of keys and indices.
     The separator is `.` by default, but it can be changed.
 
@@ -435,7 +469,7 @@ def parse(path, sep=".", quote=None):
     ()
     >>> parse("a.b.c")
     ('a', 'b', 'c')
-    >>> parse("a/b/c", sep="/")
+    >>> parse("a/b/c", sep_chr="/")
     ('a', 'b', 'c')
 
     The trailing, leading and consecutive separators are ignored.
@@ -447,7 +481,7 @@ def parse(path, sep=".", quote=None):
     >>> parse("a..b.c")
     ('a', 'b', 'c')
 
-    If a quote character is found, the path is parsed as a string.
+    If a `quote_chr` is found, the path is parsed as a string.
     The default quote characters are `"` and `'`, but they can be changed.
     This is useful for keys that contain the separator.
 
@@ -457,7 +491,7 @@ def parse(path, sep=".", quote=None):
     ('a.b', 'c')
     >>> parse('"a.b".c')
     ('a.b', 'c')
-    >>> parse("/a.b/.c", quote="/")
+    >>> parse("/a.b/.c", quote_chr="/")
     ('a.b', 'c')
 
     The numeric parts are parsed as base 10 integers and the rest as strings.
@@ -467,21 +501,40 @@ def parse(path, sep=".", quote=None):
     ('a', 0, 'b', -1)
     >>> parse("a.'0'.b.-1")
     ('a', '0', 'b', -1)
+
+    If `wildcard_chr` is given, it is replaced by the `wildcard_obj`.
+    The default `wildcard_obj` is `...`, but it can be changed.
+    A quoted wildcard is not replaced.
+
+    >>> parse("a.*.b", wildcard_chr="*")
+    ('a', Ellipsis, 'b')
+    >>> parse("a.'*'.b", wildcard_chr="*")
+    ('a', '*', 'b')
     """
 
-    quotes = [quote] if quote else ['"', "'"]
+    if len(sep_chr) != 1:
+        raise ValueError("invalid separator. Must be a single character")
+    if quote_chr and len(quote_chr) != 1:
+        raise ValueError("invalid quote. Must be a single character")
+    if wildcard_chr and len(wildcard_chr) != 1:
+        raise ValueError("invalid wildcard. Must be a single character")
+
+    quotes = [quote_chr] if quote_chr else ['"', "'"]
     result = []
     last = -1
     quote = None
-    path += sep
+    path += sep_chr
     for i, c in enumerate(path):
         # State 1: Normal character
-        if c == sep and not quote:
+        if c == sep_chr and not quote:
             part = path[last + 1 : i]
             if part:
                 # Remove quotes
                 if part[0] in quotes and part[0] == part[-1]:
                     part = part[1:-1]
+                # Replace wildcard
+                elif part == wildcard_chr:
+                    part = wildcard_obj
                 # Or parse as int if possible
                 else:
                     try:
