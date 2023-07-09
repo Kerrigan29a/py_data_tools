@@ -52,10 +52,14 @@ __license__ = "BSD 3-Clause Clear License"
 from collections.abc import Mapping, Iterable
 from collections import deque
 
+AUTOPARSE = True
+SEP_CHR = "."
+WILDCARD_OBJ = ...
+
 _undefined = object()
 
 
-def get(obj, path, default=_undefined, autoparse=True):
+def get(obj, path, default=_undefined, autoparse=AUTOPARSE, **parse_args):
     """Get a value from a nested collection using the `path`.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
@@ -77,13 +81,14 @@ def get(obj, path, default=_undefined, autoparse=True):
     'default'
 
     If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+    Any additional keyword arguments are passed to the [data_tools.parse] function.
 
-    >>> get(obj, "a.0.b.c")
+    >>> get(obj, "a/0/b/c", sep_chr="/")
     10
     """
     if not path:
         return obj
-    path = _try_parse(path, autoparse, None, "path")
+    path = _try_parse(path, autoparse, "path", **parse_args)
     try:
         return _traverse(obj, path)
     except (KeyError, IndexError) as e:
@@ -92,7 +97,7 @@ def get(obj, path, default=_undefined, autoparse=True):
         return default
 
 
-def set(obj, path, value, autoparse=True):
+def set(obj, path, value, autoparse=AUTOPARSE, **parse_args):
     """Modify or append a `value`.
 
     This is useful to modify a `value` in an object or to insert a new `value` in a dict-like object.
@@ -118,14 +123,15 @@ def set(obj, path, value, autoparse=True):
     This function returns the object with the new `value`.
 
     If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+    Any additional keyword arguments are passed to the [data_tools.parse] function.
 
     >>> obj = {"a": [{"b": 1}, {"b": 2}]}
-    >>> set(obj, "a.0.b", 10)
+    >>> set(obj, "a/0/b", 10, sep_chr="/")
     {'a': [{'b': 10}, {'b': 2}]}
     """
     if not path:
         raise ValueError("path must not be empty")
-    path = _try_parse(path, autoparse, None, "path")
+    path = _try_parse(path, autoparse, "path", **parse_args)
     cur = _traverse(obj, path[:-1])
     try:
         cur[path[-1]] = value
@@ -137,7 +143,7 @@ def set(obj, path, value, autoparse=True):
     return obj
 
 
-def delete(obj, path, autoparse=True):
+def delete(obj, path, autoparse=AUTOPARSE, **parse_args):
     """Delete a value.
 
     Deleting the last value in an object does not delete that object.
@@ -159,14 +165,15 @@ def delete(obj, path, autoparse=True):
     This function returns the object with the deleted value.
 
     If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+    Any additional keyword arguments are passed to the [data_tools.parse] function.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
-    >>> delete(obj, "a.0.b.c")
+    >>> delete(obj, "a/0/b/c", sep_chr="/")
     {'a': [{'b': {}}, {'b': {'c': 100}}]}
     """
     if not path:
         raise ValueError("path must not be empty")
-    path = _try_parse(path, autoparse, None, "path")
+    path = _try_parse(path, autoparse, "path", **parse_args)
     cur = _traverse(obj, path[:-1])
     try:
         del cur[path[-1]]
@@ -177,7 +184,7 @@ def delete(obj, path, autoparse=True):
     return obj
 
 
-def update(obj, path, func, autoparse=True):
+def update(obj, path, func, autoparse=AUTOPARSE, **parse_args):
     """Update a value based on the current value.
 
     This is an efficient alternative to getting a value, modifying it and setting it back.
@@ -204,29 +211,21 @@ def update(obj, path, func, autoparse=True):
     This function returns the updated object.
 
     If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+    Any additional keyword arguments are passed to the [data_tools.parse] function.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
-    >>> update(obj, "a.0.b.c", lambda x: x + 1)
+    >>> update(obj, "a/0/b/c", lambda x: x + 1, sep_chr="/")
     {'a': [{'b': {'c': 11}}, {'b': {'c': 100}}]}
     """
     if not path:
         raise ValueError("path must not be empty")
-    path = _try_parse(path, autoparse, None, "path")
+    path = _try_parse(path, autoparse, "path", **parse_args)
     cur = _traverse(obj, path[:-1])
     try:
         cur[path[-1]] = func(cur[path[-1]])
     except (KeyError, IndexError) as e:
         raise e
     return obj
-
-
-def _try_parse(path, autoparse, wildcard_chr, name):
-    if isinstance(path, str):
-        if autoparse:
-            path = parse(path, wildcard_chr=wildcard_chr)
-        else:
-            raise TypeError(f"{name} must be an iterable of keys or indexes")
-    return path
 
 
 def _traverse(obj, path):
@@ -332,21 +331,21 @@ def unflatten(paths, sort=False):
     return obj
 
 
-def unnest(*args, **kwargs):
+def unnest(*args, **parse_args):
     """
     Alias for [data_tools.flatten]
     """
-    return flatten(*args, **kwargs)
+    return flatten(*args, **parse_args)
 
 
-def nest(*args, **kwargs):
+def nest(*args, **parse_args):
     """
     Alias for [data_tools.unflatten]
     """
-    return unflatten(*args, **kwargs)
+    return unflatten(*args, **parse_args)
 
 
-def match(path, *patterns, wildcard_obj=..., autoparse=True, wildcard_chr=None):
+def match(path, *patterns, wildcard_obj=WILDCARD_OBJ, autoparse=AUTOPARSE, **parse_args):
     """Check for a match at the beginning of a path.
 
     >>> path = ["a", "b", "c"]
@@ -391,15 +390,15 @@ def match(path, *patterns, wildcard_obj=..., autoparse=True, wildcard_chr=None):
     ...
     TypeError: pattern must be an iterable of keys or indexes
 
-    If `wildcard_chr` is given, it will be passed to the [data_tools.parse] function.
+    Any additional `parse_args` will be passed to the [data_tools.parse] function.
 
-    >>> match("a.b.c", "a.?", wildcard_chr="?")
+    >>> match("a/b/c", "a/?", sep_chr="/", wildcard_chr="?")
     True
     """
-    return any(_match(path, pattern, False, wildcard_obj, autoparse, wildcard_chr) for pattern in patterns)
+    return any(_match(path, pattern, False, wildcard_obj, autoparse, **parse_args) for pattern in patterns)
 
 
-def fullmatch(path, *patterns, wildcard_obj=..., autoparse=True, wildcard_chr=None):
+def fullmatch(path, *patterns, wildcard_obj=WILDCARD_OBJ, autoparse=AUTOPARSE, **parse_args):
     """Check for a match in the whole path.
 
     The semantics are the same as the [data_tools.match] function.
@@ -432,15 +431,16 @@ def fullmatch(path, *patterns, wildcard_obj=..., autoparse=True, wildcard_chr=No
     >>> fullmatch(path, ("a", ..., ...), ("A", ..., ...))
     True
 
-    >>> fullmatch("a.b.c", "a.?.?", wildcard_chr="?")
+    >>> fullmatch("a/b/c", "a/?/?", sep_chr="/", wildcard_chr="?")
     True
     """
-    return any(_match(path, pattern, True, wildcard_obj, autoparse, wildcard_chr) for pattern in patterns)
+    return any(_match(path, pattern, True, wildcard_obj, autoparse, **parse_args) for pattern in patterns)
 
 
-def _match(path, pattern, full, wildcard_obj, autoparse, wildcard_chr):
-    path = _try_parse(path, autoparse, wildcard_chr, "path")
-    pattern = _try_parse(pattern, autoparse, wildcard_chr, "pattern")
+def _match(path, pattern, full, wildcard_obj, autoparse, **parse_args):
+    parse_args = {"wildcard_obj": wildcard_obj, **parse_args}
+    path = _try_parse(path, autoparse, "path", **parse_args)
+    pattern = _try_parse(pattern, autoparse, "pattern", **parse_args)
     it = iter(path)
     for p in pattern:
         try:
@@ -461,7 +461,16 @@ def _match(path, pattern, full, wildcard_obj, autoparse, wildcard_chr):
         return True
 
 
-def parse(path, sep_chr=".", quote_chr=None, wildcard_chr=None, wildcard_obj=...):
+def _try_parse(path, autoparse, name, **parse_args):
+    if isinstance(path, str):
+        if autoparse:
+            path = parse(path, **parse_args)
+        else:
+            raise TypeError(f"{name} must be an iterable of keys or indexes")
+    return path
+
+
+def parse(path, sep_chr=SEP_CHR, quote_chr=None, wildcard_chr=None, wildcard_obj=WILDCARD_OBJ):
     """Parse a path string into a sequence of keys and indices.
     The separator is `.` by default, but it can be changed.
 
