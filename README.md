@@ -1,9 +1,10 @@
-# Module [data_tools](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L1)
+# Module [data\_tools](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L1)
 This module provides several functions to work with nested collections of data.
-One example of nested collections are JSON-like objects.
+One example of nested collections is JSON-like objects.
 
-It provides functions to manipulate the values of nested collection using a path-like notation.
-A path is a sequence of keys (`str`) and indices (`int`) that can be used to access a value.
+It provides functions to manipulate the values of nested collections using a
+path-like notation. A path is a sequence of keys (`str`) and indices (`int`)
+that can be used to access a value.
 
 ```python
 >>> obj = {"a": [{"b": 1}, {"b": 2}], "c": [{"d": 10}, {"d": 20}]}
@@ -15,15 +16,16 @@ A path is a sequence of keys (`str`) and indices (`int`) that can be used to acc
 {'a': [{'b': 1}, {'b': 2}]}
 ```
 
-This functions also support paths encoded as strings.
+These functions also support string paths.
 
 ```python
 >>> get(obj, "a.0.b")
 1
 ```
 
-It also provides functions to convert a nested collection into a flatten collection and vice versa.
-This allows to use standard higher-order functions (or similar tools) to manipulate the values.
+It also provides functions to convert a nested collection into a flattened
+collection and vice versa. This allows to use standard higher-order functions
+(or similar tools) to manipulate the values.
 
 ```python
 >>> paths = list(flatten(obj))
@@ -44,9 +46,9 @@ This allows to use standard higher-order functions (or similar tools) to manipul
 ```
 
 
-## Function [data_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L58)
+## Function [data\_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L64)
 ```python
-def get(obj, path, default=_undefined, autoparse=True): ...
+def get(obj, path, default=_undefined, autoparse=AUTOPARSE, **parse_args): ...
 ```
 Get a value from a nested collection using the `path`.
 
@@ -67,28 +69,32 @@ Traceback (most recent call last):
 IndexError: list index out of range
 ```
 
-It is possible to provide a default value to return in case the path does not exist.
+It is possible to provide a default value to return in case the path does
+not exist.
 
 ```python
 >>> get(obj, ("a", 2, "b", "c"), "default")
 'default'
 ```
 
-If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+If the given `path` is a string and `autoparse` is `True`, it is first
+converted using the [data_tools.parse] function. Any additional keyword
+arguments are passed to the [data_tools.parse] function.
 
 ```python
->>> get(obj, "a.0.b.c")
+>>> get(obj, "a/0/b/c", sep_chr="/")
 10
 ```
 
 
-## Function [data_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L95)
+## Function [data\_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L104)
 ```python
-def set(obj, path, value, autoparse=True): ...
+def set(obj, path, value, autoparse=AUTOPARSE, **parse_args): ...
 ```
 Modify or append a `value`.
 
-This is useful to modify a `value` in an object or to insert a new `value` in a dict-like object. 
+This is useful to modify a `value` in an object or to insert a new `value`
+in a dict-like object.
 
 ```python
 >>> obj = {"a": [{"b": 1}, {"b": 2}]}
@@ -98,7 +104,8 @@ This is useful to modify a `value` in an object or to insert a new `value` in a 
 {'a': [{'b': 10}, {'b': 2}], 'z': 100}
 ```
 
-To append a new `value` in a list-like object, use as index the length of the list at the moment of the insertion.
+To append a new `value` in a list-like object, use as index the length of
+the list at the moment of the insertion.
 
 ```python
 >>> obj = {"a": []}
@@ -114,18 +121,20 @@ To append a new `value` in a list-like object, use as index the length of the li
 
 This function returns the object with the new `value`.
 
-If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+If the given `path` is a string and `autoparse` is `True`, it is first
+converted using the [data_tools.parse] function. Any additional keyword
+arguments are passed to the [data_tools.parse] function.
 
 ```python
 >>> obj = {"a": [{"b": 1}, {"b": 2}]}
->>> set(obj, "a.0.b", 10)
+>>> set(obj, "a/0/b", 10, sep_chr="/")
 {'a': [{'b': 10}, {'b': 2}]}
 ```
 
 
-## Function [data_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L140)
+## Function [data\_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L153)
 ```python
-def delete(obj, path, autoparse=True): ...
+def delete(obj, path, autoparse=AUTOPARSE, **parse_args): ...
 ```
 Delete a value.
 
@@ -149,22 +158,25 @@ KeyError: 'c'
 
 This function returns the object with the deleted value.
 
-If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+If the given `path` is a string and `autoparse` is `True`, it is first
+converted using the [data_tools.parse] function. Any additional keyword
+arguments are passed to the [data_tools.parse] function.
 
 ```python
 >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
->>> delete(obj, "a.0.b.c")
+>>> delete(obj, "a/0/b/c", sep_chr="/")
 {'a': [{'b': {}}, {'b': {'c': 100}}]}
 ```
 
 
-## Function [data_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L180)
+## Function [data\_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L195)
 ```python
-def update(obj, path, func, autoparse=True): ...
+def update(obj, path, func, autoparse=AUTOPARSE, **parse_args): ...
 ```
 Update a value based on the current value.
 
-This is an efficient alternative to getting a value, modifying it and setting it back.
+This is an efficient alternative to getting a value, modifying it, and
+setting it back.
 
 ```python
 >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
@@ -178,24 +190,38 @@ Traceback (most recent call last):
 IndexError: list index out of range
 ```
 
+However, this function does not allow appending a new value in a list-like
+object.
+
+```python
+>>> obj = {"a": []}
+>>> update(obj, ["a", 0], lambda x: {})
+Traceback (most recent call last):
+...
+IndexError: list index out of range
+```
+
+
 This function returns the updated object.
 
-If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
+If the given `path` is a string and `autoparse` is `True`, it is first
+converted using the [data_tools.parse] function. Any additional keyword
+arguments are passed to the [data_tools.parse] function.
 
 ```python
 >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
->>> update(obj, "a.0.b.c", lambda x: x + 1)
+>>> update(obj, "a/0/b/c", lambda x: x + 1, sep_chr="/")
 {'a': [{'b': {'c': 11}}, {'b': {'c': 100}}]}
 ```
 
 
-## Function [data_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L233)
+## Function [data\_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L252)
 ```python
 def flatten(obj, only_leaves=False): ...
 ```
 Flatten (or [data_tools.unnest]) a nested object.
 
-This functions returns all the paths in the tree structure of the object.
+This function returns all the paths in the tree structure of the object.
 
 ```python
 >>> list(flatten({'a': 1, 'b': 1}))
@@ -205,7 +231,8 @@ This functions returns all the paths in the tree structure of the object.
 ```
 
 By default, it also returns the non-leaf nodes.
-This is useful to reconstruct the object using the [data_tools.unflatten] function.
+This is useful to reconstruct the object using the [data_tools.unflatten]
+function.
 
 Set `only_leaves` to `True` to only return the leaves.
 This can be used to generate a CSV-like structure.
@@ -221,13 +248,14 @@ This can be used to generate a CSV-like structure.
 ```
 
 
-## Function [data_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L274)
+## Function [data\_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L294)
 ```python
 def unflatten(paths, sort=False): ...
 ```
 Unflatten (or [data_tools.unnest]) a list of paths.
 
-The expected input is a list of paths, as returned by the [data_tools.flatten] function.
+The expected input is a list of paths, as returned by the [data_tools.flatten]
+function.
 
 ```python
 >>> unflatten([((), {}), (('a',), 1), (('b',), 1)])
@@ -238,8 +266,8 @@ The expected input is a list of paths, as returned by the [data_tools.flatten] f
 {'a': [{'b': 1}, {'b': 2}]}
 ```
 
-Internally, this function sets each path in the given order to create the nested object.
-This means that the order of the paths matters.
+Internally, this function sets each path in the given order to create the
+nested object. This means that the order of the paths matters.
 
 ```python
 >>> unflatten([(('a', 0, 'b'), 1), (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), ((),{}), (('a'), [])])
@@ -267,21 +295,21 @@ This way, the paths that set the intermediate values are processed first.
 ```
 
 
-## Function [data_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L326)
+## Function [data\_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L347)
 ```python
-def unnest(*args, **kwargs): ...
+def unnest(*args, **parse_args): ...
 ```
 Alias for [data_tools.flatten]
 
-## Function [data_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L333)
+## Function [data\_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L354)
 ```python
-def nest(*args, **kwargs): ...
+def nest(*args, **parse_args): ...
 ```
 Alias for [data_tools.unflatten]
 
-## Function [data_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L340)
+## Function [data\_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L361)
 ```python
-def match(path, *patterns, wildcard=...): ...
+def match(path, *patterns, wildcard_obj=WILDCARD_OBJ, autoparse=AUTOPARSE, **parse_args): ...
 ```
 Check for a match at the beginning of a path.
 
@@ -297,8 +325,8 @@ True
 False
 ```
 
-The patterns can contain a wildcard, to match any value.
-By default, the wildcard is `...`, but it can be changed.
+The patterns can contain a `wildcard_obj`, to match any value.
+By default, the `wildcard_obj` is `...`, but it can be changed.
 
 ```python
 >>> match(path, ["a", ...])
@@ -318,10 +346,35 @@ When multiple patterns are given, it returns `True` if any of them matches.
 True
 ```
 
+If the given `path` or the `patterns` are strings and `autoparse` is `True`,
+they will be converted using the [data_tools.parse] function.
 
-## Function [data_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L373)
 ```python
-def fullmatch(path, *patterns, wildcard=...): ...
+>>> match("a.b.c", ["a", "b", "c"])
+True
+>>> match("a.b.c", ["a", "b", "c"], autoparse=False)
+Traceback (most recent call last):
+...
+TypeError: path must be an iterable of keys or indexes
+>>> match(("a", "b", "c"), "a.b.c")
+True
+>>> match(("a", "b", "c"), "a.b.c", autoparse=False)
+Traceback (most recent call last):
+...
+TypeError: pattern must be an iterable of keys or indexes
+```
+
+Any additional `parse_args` will be passed to the [data_tools.parse] function.
+
+```python
+>>> match("a/b/c", "a/?", sep_chr="/", wildcard_chr="?")
+True
+```
+
+
+## Function [data\_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L415)
+```python
+def fullmatch(path, *patterns, wildcard_obj=WILDCARD_OBJ, autoparse=AUTOPARSE, **parse_args): ...
 ```
 Check for a match in the whole path.
 
@@ -361,10 +414,15 @@ False
 True
 ```
 
-
-## Function [data_tools.parse](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L430)
 ```python
-def parse(path, sep='.', quote=None): ...
+>>> fullmatch("a/b/c", "a/?/?", sep_chr="/", wildcard_chr="?")
+True
+```
+
+
+## Function [data\_tools.parse](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L487)
+```python
+def parse(path, sep_chr=SEP_CHR, quote_chr=None, wildcard_chr=None, wildcard_obj=WILDCARD_OBJ): ...
 ```
 Parse a path string into a sequence of keys and indices.
 The separator is `.` by default, but it can be changed.
@@ -374,7 +432,7 @@ The separator is `.` by default, but it can be changed.
 ()
 >>> parse("a.b.c")
 ('a', 'b', 'c')
->>> parse("a/b/c", sep="/")
+>>> parse("a/b/c", sep_chr="/")
 ('a', 'b', 'c')
 ```
 
@@ -389,7 +447,7 @@ The trailing, leading and consecutive separators are ignored.
 ('a', 'b', 'c')
 ```
 
-If a quote character is found, the path is parsed as a string.
+If a `quote_chr` is found, the path is parsed as a string.
 The default quote characters are `"` and `'`, but they can be changed.
 This is useful for keys that contain the separator.
 
@@ -400,18 +458,29 @@ This is useful for keys that contain the separator.
 ('a.b', 'c')
 >>> parse('"a.b".c')
 ('a.b', 'c')
->>> parse("/a.b/.c", quote="/")
+>>> parse("/a.b/.c", quote_chr="/")
 ('a.b', 'c')
 ```
 
 The numeric parts are parsed as base 10 integers and the rest as strings.
-This can be avoided quoting the numeric parts.
+This can be avoided by quoting the numeric parts.
 
 ```python
 >>> parse("a.0.b.-1")
 ('a', 0, 'b', -1)
 >>> parse("a.'0'.b.-1")
 ('a', '0', 'b', -1)
+```
+
+If `wildcard_chr` is given, it is replaced by the `wildcard_obj`.
+The default `wildcard_obj` is `...`, but it can be changed.
+A quoted wildcard is not replaced.
+
+```python
+>>> parse("a.*.b", wildcard_chr="*")
+('a', Ellipsis, 'b')
+>>> parse("a.'*'.b", wildcard_chr="*")
+('a', '*', 'b')
 ```
 
 
@@ -427,8 +496,6 @@ This can be avoided quoting the numeric parts.
 [`data_tools.delete`]: #function-data_tools-delete "Function delete"
 [data_tools.update]: #function-data_tools-update "Function update"
 [`data_tools.update`]: #function-data_tools-update "Function update"
-[data_tools._try_parse]: #function-data_tools-_try_parse "Function _try_parse"
-[`data_tools._try_parse`]: #function-data_tools-_try_parse "Function _try_parse"
 [data_tools._traverse]: #function-data_tools-_traverse "Function _traverse"
 [`data_tools._traverse`]: #function-data_tools-_traverse "Function _traverse"
 [data_tools.flatten]: #function-data_tools-flatten "Function flatten"
@@ -445,5 +512,7 @@ This can be avoided quoting the numeric parts.
 [`data_tools.fullmatch`]: #function-data_tools-fullmatch "Function fullmatch"
 [data_tools._match]: #function-data_tools-_match "Function _match"
 [`data_tools._match`]: #function-data_tools-_match "Function _match"
+[data_tools._try_parse]: #function-data_tools-_try_parse "Function _try_parse"
+[`data_tools._try_parse`]: #function-data_tools-_try_parse "Function _try_parse"
 [data_tools.parse]: #function-data_tools-parse "Function parse"
 [`data_tools.parse`]: #function-data_tools-parse "Function parse"

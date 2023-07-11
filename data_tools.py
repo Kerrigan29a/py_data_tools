@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 203 Javier Escalada Gómez
+# Copyright (c) 2023 Javier Escalada Gómez
 # All rights reserved.
 # License: BSD 3-Clause Clear License (see LICENSE for details)
 
 """
 This module provides several functions to work with nested collections of data.
-One example of nested collections are JSON-like objects.
+One example of nested collections is JSON-like objects.
 
-It provides functions to manipulate the values of nested collection using a path-like notation.
-A path is a sequence of keys (`str`) and indices (`int`) that can be used to access a value.
+It provides functions to manipulate the values of nested collections using a
+path-like notation. A path is a sequence of keys (`str`) and indices (`int`)
+that can be used to access a value.
 
 >>> obj = {"a": [{"b": 1}, {"b": 2}], "c": [{"d": 10}, {"d": 20}]}
 >>> get(obj, ("c", 0, "d"))
@@ -19,13 +20,14 @@ A path is a sequence of keys (`str`) and indices (`int`) that can be used to acc
 >>> delete(obj, ("c",))
 {'a': [{'b': 1}, {'b': 2}]}
 
-This functions also support paths encoded as strings.
+These functions also support string paths.
 
 >>> get(obj, "a.0.b")
 1
 
-It also provides functions to convert a nested collection into a flatten collection and vice versa.
-This allows to use standard higher-order functions (or similar tools) to manipulate the values.
+It also provides functions to convert a nested collection into a flattened
+collection and vice versa. This allows to use standard higher-order functions
+(or similar tools) to manipulate the values.
 
 >>> paths = list(flatten(obj))
 >>> paths
@@ -75,13 +77,15 @@ def get(obj, path, default=_undefined, autoparse=AUTOPARSE, **parse_args):
         ...
     IndexError: list index out of range
 
-    It is possible to provide a default value to return in case the path does not exist.
+    It is possible to provide a default value to return in case the path does
+    not exist.
 
     >>> get(obj, ("a", 2, "b", "c"), "default")
     'default'
 
-    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
-    Any additional keyword arguments are passed to the [data_tools.parse] function.
+    If the given `path` is a string and `autoparse` is `True`, it is first
+    converted using the [data_tools.parse] function. Any additional keyword
+    arguments are passed to the [data_tools.parse] function.
 
     >>> get(obj, "a/0/b/c", sep_chr="/")
     10
@@ -100,7 +104,8 @@ def get(obj, path, default=_undefined, autoparse=AUTOPARSE, **parse_args):
 def set(obj, path, value, autoparse=AUTOPARSE, **parse_args):
     """Modify or append a `value`.
 
-    This is useful to modify a `value` in an object or to insert a new `value` in a dict-like object.
+    This is useful to modify a `value` in an object or to insert a new `value`
+    in a dict-like object.
 
     >>> obj = {"a": [{"b": 1}, {"b": 2}]}
     >>> set(obj, ("a", 0, "b"), 10)
@@ -108,7 +113,8 @@ def set(obj, path, value, autoparse=AUTOPARSE, **parse_args):
     >>> set(obj, ("z",), 100)
     {'a': [{'b': 10}, {'b': 2}], 'z': 100}
 
-    To append a new `value` in a list-like object, use as index the length of the list at the moment of the insertion.
+    To append a new `value` in a list-like object, use as index the length of
+    the list at the moment of the insertion.
 
     >>> obj = {"a": []}
     >>> set(obj, ("a", 0), {})
@@ -122,8 +128,9 @@ def set(obj, path, value, autoparse=AUTOPARSE, **parse_args):
 
     This function returns the object with the new `value`.
 
-    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
-    Any additional keyword arguments are passed to the [data_tools.parse] function.
+    If the given `path` is a string and `autoparse` is `True`, it is first
+    converted using the [data_tools.parse] function. Any additional keyword
+    arguments are passed to the [data_tools.parse] function.
 
     >>> obj = {"a": [{"b": 1}, {"b": 2}]}
     >>> set(obj, "a/0/b", 10, sep_chr="/")
@@ -164,8 +171,9 @@ def delete(obj, path, autoparse=AUTOPARSE, **parse_args):
 
     This function returns the object with the deleted value.
 
-    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
-    Any additional keyword arguments are passed to the [data_tools.parse] function.
+    If the given `path` is a string and `autoparse` is `True`, it is first
+    converted using the [data_tools.parse] function. Any additional keyword
+    arguments are passed to the [data_tools.parse] function.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
     >>> delete(obj, "a/0/b/c", sep_chr="/")
@@ -187,7 +195,8 @@ def delete(obj, path, autoparse=AUTOPARSE, **parse_args):
 def update(obj, path, func, autoparse=AUTOPARSE, **parse_args):
     """Update a value based on the current value.
 
-    This is an efficient alternative to getting a value, modifying it and setting it back.
+    This is an efficient alternative to getting a value, modifying it, and
+    setting it back.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
     >>> update(obj, ["a", 0, "b", "c"], lambda x: x + 1)
@@ -199,7 +208,8 @@ def update(obj, path, func, autoparse=AUTOPARSE, **parse_args):
     ...
     IndexError: list index out of range
 
-    However, this function does not allow appending a new value in a list-like object.
+    However, this function does not allow appending a new value in a list-like
+    object.
 
     >>> obj = {"a": []}
     >>> update(obj, ["a", 0], lambda x: {})
@@ -210,8 +220,9 @@ def update(obj, path, func, autoparse=AUTOPARSE, **parse_args):
 
     This function returns the updated object.
 
-    If the the given `path` is a string and `autoparse` is `True`, it is first converted using the [data_tools.parse] function.
-    Any additional keyword arguments are passed to the [data_tools.parse] function.
+    If the given `path` is a string and `autoparse` is `True`, it is first
+    converted using the [data_tools.parse] function. Any additional keyword
+    arguments are passed to the [data_tools.parse] function.
 
     >>> obj = {"a": [{"b": {"c": 10}}, {"b": {"c": 100}}]}
     >>> update(obj, "a/0/b/c", lambda x: x + 1, sep_chr="/")
@@ -241,7 +252,7 @@ def _traverse(obj, path):
 def flatten(obj, only_leaves=False):
     """Flatten (or [data_tools.unnest]) a nested object.
 
-    This functions returns all the paths in the tree structure of the object.
+    This function returns all the paths in the tree structure of the object.
 
     >>> list(flatten({'a': 1, 'b': 1}))
     [((), {}), (('a',), 1), (('b',), 1)]
@@ -249,7 +260,8 @@ def flatten(obj, only_leaves=False):
     [((), {}), (('a',), {}), (('b',), {}), (('a', 'B'), 1), (('b', 'B'), 1)]
 
     By default, it also returns the non-leaf nodes.
-    This is useful to reconstruct the object using the [data_tools.unflatten] function.
+    This is useful to reconstruct the object using the [data_tools.unflatten]
+    function.
 
     Set `only_leaves` to `True` to only return the leaves.
     This can be used to generate a CSV-like structure.
@@ -282,7 +294,8 @@ def flatten(obj, only_leaves=False):
 def unflatten(paths, sort=False):
     """Unflatten (or [data_tools.unnest]) a list of paths.
 
-    The expected input is a list of paths, as returned by the [data_tools.flatten] function.
+    The expected input is a list of paths, as returned by the [data_tools.flatten]
+    function.
 
     >>> unflatten([((), {}), (('a',), 1), (('b',), 1)])
     {'a': 1, 'b': 1}
@@ -291,8 +304,8 @@ def unflatten(paths, sort=False):
     >>> unflatten([((), {}), (('a',), []), (('a', 0), {}), (('a', 0, 'b'), 1), (('a', 1), {}), (('a', 1, 'b'), 2)])
     {'a': [{'b': 1}, {'b': 2}]}
 
-    Internally, this function sets each path in the given order to create the nested object.
-    This means that the order of the paths matters.
+    Internally, this function sets each path in the given order to create the
+    nested object. This means that the order of the paths matters.
 
     >>> unflatten([(('a', 0, 'b'), 1), (('a', 1, 'b'), 2), (('a', 0), {}), (('a', 1), {}), ((),{}), (('a'), [])])
     Traceback (most recent call last):
@@ -375,7 +388,8 @@ def match(path, *patterns, wildcard_obj=WILDCARD_OBJ, autoparse=AUTOPARSE, **par
     >>> match(path, ["a"], ["A"])
     True
     
-    If the the given `path` or the `patterns` are strings and `autoparse` is `True`, they will be converted using the [data_tools.parse] function.
+    If the given `path` or the `patterns` are strings and `autoparse` is `True`,
+    they will be converted using the [data_tools.parse] function.
 
     >>> match("a.b.c", ["a", "b", "c"])
     True
@@ -504,7 +518,7 @@ def parse(path, sep_chr=SEP_CHR, quote_chr=None, wildcard_chr=None, wildcard_obj
     ('a.b', 'c')
 
     The numeric parts are parsed as base 10 integers and the rest as strings.
-    This can be avoided quoting the numeric parts.
+    This can be avoided by quoting the numeric parts.
 
     >>> parse("a.0.b.-1")
     ('a', 0, 'b', -1)
