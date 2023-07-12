@@ -1,5 +1,5 @@
 # Module [data\_tools](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L1)
-This module provides several functions to work with nested collections of data.
+This package provides several functions to work with nested collections of data.
 One example of nested collections is JSON-like objects.
 
 It provides functions to manipulate the values of nested collections using a

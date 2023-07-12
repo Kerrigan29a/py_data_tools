@@ -5,7 +5,7 @@
 # License: BSD 3-Clause Clear License (see LICENSE for details)
 
 """
-This module provides several functions to work with nested collections of data.
+This package provides several functions to work with nested collections of data.
 One example of nested collections is JSON-like objects.
 
 It provides functions to manipulate the values of nested collections using a
