@@ -45,8 +45,7 @@ collection and vice versa. This allows to use standard higher-order functions
 {'a': [{'b': 10}, {'b': 20}]}
 ```
 
-
-## Function [data\_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L64)
+## Function [data\_tools.get](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L70)
 ```python
 def get(obj, path, default=_undefined, autoparse=AUTOPARSE, **parse_args): ...
 ```
@@ -86,8 +85,7 @@ arguments are passed to the [data_tools.parse] function.
 10
 ```
 
-
-## Function [data\_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L104)
+## Function [data\_tools.set](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L118)
 ```python
 def set(obj, path, value, autoparse=AUTOPARSE, **parse_args): ...
 ```
@@ -131,8 +129,7 @@ arguments are passed to the [data_tools.parse] function.
 {'a': [{'b': 10}, {'b': 2}]}
 ```
 
-
-## Function [data\_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L153)
+## Function [data\_tools.delete](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L173)
 ```python
 def delete(obj, path, autoparse=AUTOPARSE, **parse_args): ...
 ```
@@ -168,8 +165,7 @@ arguments are passed to the [data_tools.parse] function.
 {'a': [{'b': {}}, {'b': {'c': 100}}]}
 ```
 
-
-## Function [data\_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L195)
+## Function [data\_tools.update](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L219)
 ```python
 def update(obj, path, func, autoparse=AUTOPARSE, **parse_args): ...
 ```
@@ -201,7 +197,6 @@ Traceback (most recent call last):
 IndexError: list index out of range
 ```
 
-
 This function returns the updated object.
 
 If the given `path` is a string and `autoparse` is `True`, it is first
@@ -214,8 +209,7 @@ arguments are passed to the [data_tools.parse] function.
 {'a': [{'b': {'c': 11}}, {'b': {'c': 100}}]}
 ```
 
-
-## Function [data\_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L252)
+## Function [data\_tools.flatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L281)
 ```python
 def flatten(obj, only_leaves=False): ...
 ```
@@ -247,8 +241,7 @@ This can be used to generate a CSV-like structure.
 [((), {}), (('a',), []), (('a', 0), {}), (('a', 1), {}), (('a', 0, 'b'), 1), (('a', 1, 'b'), 2)]
 ```
 
-
-## Function [data\_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L294)
+## Function [data\_tools.unflatten](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L329)
 ```python
 def unflatten(paths, sort=False): ...
 ```
@@ -294,20 +287,19 @@ This way, the paths that set the intermediate values are processed first.
 {'a': [{'b': 1}, {'b': 2}]}
 ```
 
-
-## Function [data\_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L347)
+## Function [data\_tools.unnest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L390)
 ```python
 def unnest(*args, **parse_args): ...
 ```
 Alias for [data_tools.flatten]
 
-## Function [data\_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L354)
+## Function [data\_tools.nest](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L397)
 ```python
 def nest(*args, **parse_args): ...
 ```
 Alias for [data_tools.unflatten]
 
-## Function [data\_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L361)
+## Function [data\_tools.match](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L404)
 ```python
 def match(path, *patterns, wildcard_obj=WILDCARD_OBJ, autoparse=AUTOPARSE, **parse_args): ...
 ```
@@ -371,8 +363,7 @@ Any additional `parse_args` will be passed to the [data_tools.parse] function.
 True
 ```
 
-
-## Function [data\_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L415)
+## Function [data\_tools.fullmatch](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L468)
 ```python
 def fullmatch(path, *patterns, wildcard_obj=WILDCARD_OBJ, autoparse=AUTOPARSE, **parse_args): ...
 ```
@@ -419,8 +410,7 @@ True
 True
 ```
 
-
-## Function [data\_tools.parse](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L487)
+## Function [data\_tools.parse](https://github.com/kerrigan29a/py_data_tools/blob/main/data_tools.py#L548)
 ```python
 def parse(path, sep_chr=SEP_CHR, quote_chr=None, wildcard_chr=None, wildcard_obj=WILDCARD_OBJ): ...
 ```
@@ -482,7 +472,6 @@ A quoted wildcard is not replaced.
 >>> parse("a.'*'.b", wildcard_chr="*")
 ('a', '*', 'b')
 ```
-
 
 
 <!-- references -->
