@@ -19,7 +19,7 @@ test: data_tools.py doctest_utils.py
 README.md: data_tools.py tools/py2doc.py tools/doc2md.py
 	$(PY) tools/py2doc.py $< | $(PY) tools/doc2md.py -u $(URL) -o README.md
 
-doctest_utils.py: tools
+doctest_utils.py:
 	echo "# -*- coding: utf-8 -*-" > $@
 	echo "" >> $@
 	echo "################################################################################" >> $@
